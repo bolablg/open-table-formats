@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Olist · Table state explorer</title><link rel="stylesheet" href="/style.css"><script src="/app.js" defer></script></head>
+<body>
+<header><div class="brand"><span class="mark">O</span><span>Olist lab <small>Table state explorer</small></span></div><button id="refresh">Refresh evidence ↻</button></header>
+<main>
+<div class="intro"><p class="eyebrow">ONE DATASET · THREE TABLE FORMATS</p><h1>See how your table changes.</h1><p>Configure starting rows, inserts, deletes and sample seed in the notebook. Defaults: 3 → 5 → 4.</p></div>
+<section class="controls" aria-label="Evidence selection"><label>Run<select id="run" aria-label="Run"></select></label><label>Stage<select id="stage" aria-label="Stage"></select></label><label>Format<select id="format" aria-label="Format"><option value="all">Compare all formats</option><option value="iceberg">Apache Iceberg</option><option value="delta">Delta Lake</option><option value="hudi">Apache Hudi</option></select></label></section>
+<p id="provenance" class="provenance"></p><div id="notice" role="status" aria-live="polite"></div>
+<section id="question" class="question" hidden></section><section id="cards" class="cards" aria-label="Format validation"></section>
+<nav class="tabs" aria-label="Evidence views"><button data-view="rows" class="selected" aria-pressed="true">Rows</button><button data-view="changes" aria-pressed="false">Row changes</button><button data-view="schema" aria-pressed="false">Schema</button><button data-view="metadata" aria-pressed="false">Metadata</button><button data-view="files" aria-pressed="false">File changes</button></nav>
+<div class="view-tools"><label id="search-label">Filter rows<input id="search" placeholder="Search field values…" aria-label="Filter rows"></label><button id="download">Download displayed evidence</button></div>
+<section id="content" aria-live="polite"></section>
+<footer>Saved operation snapshots, not live table queries. Inserts use reserved Olist records; the deletion is a controlled lab demonstration. Times use the documented UTC lab convention. <a id="history-link" href="/legacy">Earlier runs</a></footer>
+</main>
+</body></html>

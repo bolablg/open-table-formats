@@ -1,0 +1,27 @@
+# Keep local data, runtime state and credentials out of version control.
+/cloud-lab/
+/local-lab/evidence
+/runtime
+**/evidence/**
+*.csv
+*.parquet
+*.avro
+*.orc
+*.log
+*.ipynb
+!local-lab/notebooks/Olist_Table_Formats.ipynb
+!local-lab/notebooks/Olist_Table_Formats_Manual.ipynb
+**/.ipynb_checkpoints/
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+.aws/
+**/credentials
+*.pem
+*.key
+.DS_Store

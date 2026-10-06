@@ -1,0 +1,4 @@
+# Both images install dependencies only; no dataset or runtime evidence is sent.
+*
+!Dockerfile.spark
+!Dockerfile.olist

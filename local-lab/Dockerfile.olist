@@ -1,0 +1,18 @@
+ARG LAB_SPARK_IMAGE=open-table-formats-lab-spark
+FROM ${LAB_SPARK_IMAGE}
+
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends python3-venv \
+    && rm -rf /var/lib/apt/lists/* \
+    && python3 -m venv /opt/olist-notebook \
+    && /opt/olist-notebook/bin/pip install --no-cache-dir jupyterlab==4.4.10 nbconvert==7.16.6
+ENV PATH="/opt/olist-notebook/bin:${PATH}" \
+    PYTHONPATH="/opt/spark/python:/opt/spark/python/lib/py4j-0.10.9.7-src.zip:/workspace/scripts" \
+    PYSPARK_PYTHON="/opt/olist-notebook/bin/python" \
+    PYSPARK_DRIVER_PYTHON="/opt/olist-notebook/bin/python" \
+    PYSPARK_SUBMIT_ARGS="--master local[2] --driver-memory 2g pyspark-shell" \
+    TZ="UTC"
+RUN mkdir -p /home/spark/.local/share/jupyter /home/spark/.ipython \
+    && chown -R 185:185 /opt/olist-notebook /home/spark
+USER 185
+WORKDIR /workspace

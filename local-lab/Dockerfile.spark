@@ -1,0 +1,29 @@
+FROM apache/spark:3.5.7-scala2.12-java17-python3-ubuntu
+
+USER root
+
+ARG ICEBERG_VERSION=1.11.0
+ARG DELTA_VERSION=3.3.2
+ARG HUDI_VERSION=1.2.0
+ARG HADOOP_VERSION=3.3.4
+ARG AWS_SDK_VERSION=1.12.262
+
+RUN set -eux; \
+    base="https://repo1.maven.org/maven2"; \
+    curl -fsSL "$base/org/apache/iceberg/iceberg-spark-runtime-3.5_2.12/${ICEBERG_VERSION}/iceberg-spark-runtime-3.5_2.12-${ICEBERG_VERSION}.jar" \
+      -o "/opt/spark/jars/iceberg-spark-runtime-3.5_2.12-${ICEBERG_VERSION}.jar"; \
+    curl -fsSL "$base/io/delta/delta-spark_2.12/${DELTA_VERSION}/delta-spark_2.12-${DELTA_VERSION}.jar" \
+      -o "/opt/spark/jars/delta-spark_2.12-${DELTA_VERSION}.jar"; \
+    curl -fsSL "$base/io/delta/delta-storage/${DELTA_VERSION}/delta-storage-${DELTA_VERSION}.jar" \
+      -o "/opt/spark/jars/delta-storage-${DELTA_VERSION}.jar"; \
+    curl -fsSL "$base/org/apache/hudi/hudi-spark3.5-bundle_2.12/${HUDI_VERSION}/hudi-spark3.5-bundle_2.12-${HUDI_VERSION}.jar" \
+      -o "/opt/spark/jars/hudi-spark3.5-bundle_2.12-${HUDI_VERSION}.jar"; \
+    curl -fsSL "$base/org/apache/hadoop/hadoop-aws/${HADOOP_VERSION}/hadoop-aws-${HADOOP_VERSION}.jar" \
+      -o "/opt/spark/jars/hadoop-aws-${HADOOP_VERSION}.jar"; \
+    curl -fsSL "$base/com/amazonaws/aws-java-sdk-bundle/${AWS_SDK_VERSION}/aws-java-sdk-bundle-${AWS_SDK_VERSION}.jar" \
+      -o "/opt/spark/jars/aws-java-sdk-bundle-${AWS_SDK_VERSION}.jar"; \
+    chown 185:185 /opt/spark/jars/*.jar
+
+USER 185
+WORKDIR /workspace
+

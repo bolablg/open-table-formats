@@ -1,0 +1,49 @@
+.PHONY: build start notebook execute manual-execute new create insert delete explorer test publication-check reset
+LAB_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+COMPOSE = docker compose -p open-table-formats-lab --project-directory "$(LAB_DIR)" -f "$(LAB_DIR)/docker-compose.yml" -f "$(LAB_DIR)/docker-compose.olist.yml"
+BASE_COMPOSE = docker compose -p open-table-formats-lab --project-directory "$(LAB_DIR)" -f "$(LAB_DIR)/docker-compose.yml"
+
+build:
+	$(BASE_COMPOSE) build spark
+	$(COMPOSE) build olist
+
+start:
+	mkdir -p "$(LAB_DIR)/evidence/olist"
+	$(COMPOSE) up -d --wait s3
+	$(COMPOSE) run --rm olist-init
+
+notebook: start
+	$(COMPOSE) up -d notebook
+	$(COMPOSE) logs --tail=25 notebook
+
+execute: start
+	$(COMPOSE) run --rm olist jupyter nbconvert --to notebook --execute notebooks/Olist_Table_Formats.ipynb --output-dir evidence/olist --output executed-tiny-walkthrough.ipynb --ExecutePreprocessor.timeout=1200
+	python3 "$(LAB_DIR)/scripts/archive_executed_notebook.py"
+
+# Self-contained manual notebook; each execution has a unique ignored output file.
+manual-execute: start
+	$(COMPOSE) run --rm olist jupyter nbconvert --to notebook --execute notebooks/Olist_Table_Formats_Manual.ipynb --output-dir evidence/olist/manual/executions --output "manual-$$(python3 -c 'import uuid; print(uuid.uuid4().hex)')" --ExecutePreprocessor.timeout=1200
+
+INITIAL_ROWS ?= 3
+INSERT_ROWS ?= 2
+DELETE_ROWS ?= 1
+SAMPLE_SEED ?= open-table-formats-lab-v1
+
+new:
+	$(COMPOSE) run --rm olist python /workspace/scripts/olist_stage.py new --initial-rows "$(INITIAL_ROWS)" --insert-rows "$(INSERT_ROWS)" --delete-rows "$(DELETE_ROWS)" --sample-seed "$(SAMPLE_SEED)"
+
+create insert delete:
+	$(COMPOSE) run --rm olist python /workspace/scripts/olist_stage.py $@
+
+reset:
+	@test -n "$(RUN_ID)" || (echo 'Set RUN_ID to the exact Olist run to reset'; exit 1)
+	$(COMPOSE) run --rm olist python /workspace/scripts/olist_stage.py reset --run-id "$(RUN_ID)" --confirm-run-id "$(RUN_ID)"
+
+explorer:
+	python3 "$(LAB_DIR)/scripts/explore_evidence.py" --port 8765
+
+test:
+	cd "$(LAB_DIR)" && python3 -m unittest discover -s tests -p 'test_*.py' -v
+
+publication-check:
+	python3 "$(LAB_DIR)/scripts/check_publication.py"

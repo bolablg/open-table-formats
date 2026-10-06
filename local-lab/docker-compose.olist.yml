@@ -1,0 +1,53 @@
+services:
+  olist-init:
+    image: amazon/aws-cli:2.31.22
+    depends_on:
+      s3:
+        condition: service_healthy
+    environment:
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      AWS_DEFAULT_REGION: us-east-1
+      S3_BUCKET: lakehouse-lab
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        aws --endpoint-url=http://s3:4566 s3api head-bucket --bucket "$${S3_BUCKET}" 2>/dev/null || aws --endpoint-url=http://s3:4566 s3api create-bucket --bucket "$${S3_BUCKET}"
+
+  olist:
+    image: open-table-formats-lab-olist
+    build:
+      context: .
+      dockerfile: Dockerfile.olist
+    depends_on:
+      s3:
+        condition: service_healthy
+    environment:
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      AWS_REGION: us-east-1
+      S3_BUCKET: lakehouse-lab
+      S3_ENDPOINT: http://s3:4566
+      OLIST_CSV_PATH: /source/olist_orders_dataset.csv
+      OLIST_EVIDENCE_DIR: /workspace/evidence/olist
+      JUPYTER_CONFIG_DIR: /tmp/olist-jupyter-config
+      JUPYTER_RUNTIME_DIR: /tmp/olist-jupyter-runtime
+      JUPYTER_DATA_DIR: /tmp/olist-jupyter-data
+      IPYTHONDIR: /tmp/olist-ipython
+    volumes:
+      - ./scripts:/workspace/scripts:ro
+      - ./notebooks:/workspace/notebooks
+      - ./tests:/workspace/tests:ro
+      - ./evidence/olist:/workspace/evidence/olist
+      - type: bind
+        source: ${OLIST_SOURCE_CSV:?Set OLIST_SOURCE_CSV to your downloaded orders CSV}
+        target: /source/olist_orders_dataset.csv
+        read_only: true
+    command: ["python", "/workspace/scripts/olist_stage.py", "new"]
+
+  notebook:
+    extends:
+      service: olist
+    ports:
+      - "127.0.0.1:8888:8888"
+    command: ["jupyter", "lab", "--ip=0.0.0.0", "--port=8888", "--no-browser", "--ServerApp.root_dir=/workspace", "--ServerApp.default_url=/lab/tree/notebooks/Olist_Table_Formats.ipynb"]

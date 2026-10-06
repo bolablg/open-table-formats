@@ -1,0 +1,76 @@
+name: open-table-formats-lab
+
+services:
+  generator:
+    image: python:3.12-slim
+    volumes:
+      - ./data:/data
+    command: ["python", "/data/generate_orders.py"]
+
+  s3:
+    image: localstack/localstack:4.8.1
+    environment:
+      SERVICES: s3
+      AWS_DEFAULT_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-test}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-test}
+      PERSISTENCE: "1"
+    ports:
+      - "127.0.0.1:4566:4566"
+    volumes:
+      - s3-data:/var/lib/localstack
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:4566/_localstack/health | grep -Eq '\"s3\": \"(available|running)\"'"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
+
+  seed:
+    image: amazon/aws-cli:2.31.22
+    depends_on:
+      s3:
+        condition: service_healthy
+    environment:
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-test}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-test}
+      AWS_DEFAULT_REGION: ${AWS_REGION:-us-east-1}
+      S3_BUCKET: ${S3_BUCKET:-lakehouse-lab}
+    volumes:
+      - ./data:/seed:ro
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        aws --endpoint-url=http://s3:4566 s3api create-bucket --bucket "$${S3_BUCKET}" 2>/dev/null || true
+        aws --endpoint-url=http://s3:4566 s3 rm "s3://$${S3_BUCKET}/warehouse/" --recursive --only-show-errors || true
+        aws --endpoint-url=http://s3:4566 s3 cp /seed/orders.csv "s3://$${S3_BUCKET}/raw/orders/orders.csv"
+        aws --endpoint-url=http://s3:4566 s3 ls "s3://$${S3_BUCKET}/raw/orders/"
+
+  spark:
+    build:
+      context: .
+      dockerfile: Dockerfile.spark
+    depends_on:
+      s3:
+        condition: service_healthy
+    environment:
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-test}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-test}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      S3_BUCKET: ${S3_BUCKET:-lakehouse-lab}
+      S3_ENDPOINT: http://s3:4566
+      EVIDENCE_DIR: /workspace/evidence
+      PYSPARK_PYTHON: python3
+    volumes:
+      - ./scripts:/workspace/scripts:ro
+      - ./evidence:/workspace/evidence
+    command:
+      - /opt/spark/bin/spark-submit
+      - --master
+      - local[2]
+      - --driver-memory
+      - 2g
+      - /workspace/scripts/run_lab.py
+
+volumes:
+  s3-data:
