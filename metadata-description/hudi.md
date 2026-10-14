@@ -2,6 +2,8 @@
 
 [Back to the guide index](README.md)
 
+For every captured property, grouped by importance, see the [complete field reference](hudi-field-reference.md).
+
 The reference run ends with **4 business rows** after a DELETE. Hudi **1.2.0** writes a **Copy-on-Write** business table, with table version **9** and timeline layout **2**. Its auxiliary metadata table has its own timeline and log files; those do not make the business table Merge-on-Read.
 
 ## Latest metadata and system file map
@@ -127,7 +129,7 @@ These settings were decoded from the create-stage business-table `hoodie.propert
 | `hoodie.datasource.write.hive_style_partitioning` | `true`, but no partition fields are configured here. |
 | `hoodie.datasource.write.partitionpath.urlencode` | `false`. |
 | `hoodie.partition.metafile.use.base.format` | `false`. |
-| `hoodie.table.checksum` | `189955218`, configuration integrity bookkeeping, not a checksum of every order or data file. |
+| `hoodie.table.checksum` | `189955218`, table-identity checksum used during configuration validation. In this implementation it is derived from the database/table name, not every configuration property or data file. |
 
 The [Olist adapter](../local-lab/scripts/olist_adapters.py) configures the nonpartitioned record key and merge mode; the [base adapter](../local-lab/scripts/format_adapters.py) enables metadata and disables automatic cleaning for this exercise. Not every writer option is persisted in `hoodie.properties`. [3]
 

@@ -12,6 +12,19 @@ Start here to understand how the lab's three formats turn stored files into a co
 
 Read the latest-state example first, then the file map and field descriptions. Filenames below are relative to each format's table root unless stated otherwise. The formats do not share one metadata layout or one version counter.
 
+## Complete captured-field references
+
+The walkthroughs above explain the story. For individual properties, use the references below. Each groups fields by importance, gives their purpose and interprets their observed value or absence:
+
+- [Iceberg field reference](iceberg-field-reference.md)
+- [Delta Lake field reference](delta-field-reference.md)
+- [Hudi field reference](hudi-field-reference.md)
+- [Shared lab capture fields](capture-field-reference.md), which belong to the inspector rather than a table-format specification
+
+**Priority 1: table correctness** covers identity, schema, committed state and file membership. **Priority 2: planning and change interpretation** covers statistics, layout and operation counts. **Priority 3: diagnostics and optional features** covers provenance, timings, integrity helpers and inactive fields. Priority is a reading order, not permission for an implementing engine to ignore protocol fields.
+
+Coverage means every property name in the decoded reference-run metadata, including embedded JSON schemas/statistics and SQL metadata views. Repeated map keys such as column IDs, column names and partition paths are data keys, not new property definitions. Older create/insert captures supply properties inherited by the latest state. Uncaptured payloads remain explicitly unavailable; this is not a dictionary of every possible field in every format release.
+
 ## Evidence and versions
 
 The reference run is `olist_article_3_2_1_20261006T092918Z_a1e10448`. Its final automated snapshot was captured at **2026-10-06T09:30:43.403101Z**, after create, insert and delete: **3 → 5 → 4 business rows**. Saved validations report four unique keys and matching business values for each format.
@@ -58,3 +71,11 @@ Each guide distinguishes decoded contents, inventory-only observations and files
 After the delete, saved inventories still contain older data files. Readers must interpret the format's committed state rather than read every Parquet file in the folder. The lab demonstrates that distinction; it does not benchmark performance, validate concurrent writers, prove crash recovery or test cross-engine compatibility.
 
 When refreshing these guides, use one run consistently, recheck the selected state and arithmetic, preserve capture warnings, and update the version table. Never substitute a guessed file payload for an inventory-only object.
+
+Check captured-property name coverage from the repository root after generating local automated evidence:
+
+```sh
+python3 local-lab/scripts/check_metadata_documentation.py
+```
+
+Pass `--run-id <run_id>` for a specific saved run, or `--evidence-root /path/to/olist` for another evidence location. This read-only check includes all three stages, embedded JSON schemas/statistics, table properties and captured SQL views. It checks for reference-table entries, not whether their explanations are semantically correct. Semantic review still requires the saved values and primary sources. It cannot validate properties in files whose contents were not captured.

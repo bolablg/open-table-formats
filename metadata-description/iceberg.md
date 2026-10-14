@@ -2,6 +2,8 @@
 
 [Back to the guide index](README.md)
 
+For every captured property, grouped by importance, see the [complete field reference](iceberg-field-reference.md).
+
 The reference run ends with **4 rows in 4 active data files**, selected by snapshot `5484902428416146878`. Its physical inventory contains **5 Parquet files** because an older file remains stored. This guide describes Iceberg **1.11.0, table format v2**, not every possible Iceberg layout.
 
 ## Read the files in this order

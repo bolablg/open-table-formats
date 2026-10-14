@@ -2,6 +2,8 @@
 
 [Back to the guide index](README.md)
 
+For every captured property, grouped by importance, see the [complete field reference](delta-field-reference.md).
+
 The reference run ends at **table version 2**, with **4 active Parquet files and 4 business rows**. The latest commit is a DELETE. This guide describes Delta Lake **3.3.2**, with reader protocol 1 and writer protocol 2.
 
 ## Latest metadata and system file map
