@@ -36,6 +36,8 @@ See the [manual guide](local-lab/docs/manual-walkthrough.md) or [automated guide
 
 ## Explore the results
 
+Read the [metadata descriptions](metadata-description/README.md) for annotated guides to the latest saved Iceberg, Delta Lake and Hudi table state, including their system files and capture limits.
+
 In another terminal, from `local-lab/`:
 
 ```sh
