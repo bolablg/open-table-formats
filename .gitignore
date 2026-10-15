@@ -2,6 +2,7 @@
 /cloud-lab/
 /local-lab/evidence
 /runtime
+**/manual-output/
 **/evidence/**
 *.csv
 *.parquet

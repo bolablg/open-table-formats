@@ -6,12 +6,14 @@ Compare the table state recorded by Apache Iceberg, Delta Lake and Apache Hudi a
 
 | Path | Operations | Default row counts | Results |
 | --- | --- | --- | --- |
-| [Manual notebook](notebooks/Olist_Table_Formats_Manual.ipynb) | Create, insert, update, delete | 3 → 5 → 5 → 4 | SQL, DataFrame writes and metadata inspection directly in cells |
+| [Manual notebook](notebooks/Olist_Table_Formats_Manual.ipynb) | Create, insert, update, delete | 3 → 5 → 5 → 4 | Independent local-disk notebook; one explicit Spark setup, no project helpers |
 | [Automated notebook](notebooks/Olist_Table_Formats.ipynb) | Create, insert, delete | 3 → 5 → 4 | Shared runner, validation and saved explorer snapshots |
 
 Both let you configure initial rows, inserts, deletes and sample seed. The manual path adds a one-day change to one estimated delivery date. Follow the [manual guide](docs/manual-walkthrough.md) or [automated guide](docs/olist-walkthrough.md).
 
 ## Start
+
+The manual notebook can run without Docker, LocalStack or the explorer. Follow the [standalone setup](docs/manual-walkthrough.md#run-without-this-repositorys-infrastructure). The commands below launch the automated stack or provide an optional bundled notebook runtime.
 
 Requirements: Docker Engine/Desktop with Compose v2, host Python 3.9+, several GB for images, and enough Docker memory for a 2 GB Spark driver. Download the source CSV using the [data instructions](../DATA_LICENSE.md).
 
@@ -23,7 +25,7 @@ make -f Makefile.olist build
 make -f Makefile.olist notebook
 ```
 
-Open the token-bearing Jupyter URL printed in the logs. Choose a notebook, edit `CONFIG`, and run cells in order using a fresh kernel. Run one lab writer at a time. The CSV is mounted read-only.
+Open the token-bearing Jupyter URL printed in the logs. Choose a notebook, edit its configuration cell, and run cells in order using a fresh kernel. Run one lab writer at a time. The CSV is mounted read-only. For the manual UI without starting LocalStack, use `make -f Makefile.olist manual-notebook` instead.
 
 For headless execution:
 
@@ -58,9 +60,9 @@ This configuration gives **4 → 7 → 5** rows. Later stages use the run's save
 
 ## Storage
 
-Every launch uses Compose project `open-table-formats-lab`, network `open-table-formats-lab_default`, and volume `open-table-formats-lab_s3-data`. Keep that project name when moving the checkout to reuse storage. Two checkouts with the same project name address the same services and volume, so run only one at a time.
+The automated Docker stack uses Compose project `open-table-formats-lab`, network `open-table-formats-lab_default`, and volume `open-table-formats-lab_s3-data`. Keep that project name when moving the checkout to reuse automated storage. Two checkouts with the same project name address the same services and volume, so run only one at a time.
 
-Olist runs use separate object prefixes and local evidence directories. Use the [scoped reset](docs/olist-walkthrough.md#scoped-reset-and-stopping) to remove one run's table objects. The base Makefile's `make reset` deletes the shared S3 volume and should not be used for Olist runs.
+Automated Olist runs use separate object prefixes and local evidence directories. Use the [scoped reset](docs/olist-walkthrough.md#scoped-reset-and-stopping) to remove one automated run's table objects. The base Makefile's `make reset` deletes the shared S3 volume and should not be used for Olist runs. Manual runs use unique local filesystem directories under their configured `OUTPUT_BASE` and do not use that S3 reset mechanism.
 
 Source data, generated outputs and credentials are excluded from Git. Keep dataset-derived records local and clear notebook outputs before sharing source notebooks.
 

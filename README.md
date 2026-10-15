@@ -1,10 +1,12 @@
 # Open table formats lab
 
-Inspect how Apache Iceberg, Delta Lake and Apache Hudi record changes to the same Olist orders. This local Docker lab writes three independent tables, checks every business value after each operation, and exposes their metadata and physical file changes.
+Inspect how Apache Iceberg, Delta Lake and Apache Hudi record changes to the same Olist orders. The standalone manual notebook uses local disk; the automated Docker lab uses LocalStack and the explorer. Both write three independent tables and check every business value after each operation.
 
 Use it to understand the difference between business rows, committed table state and an object-storage listing.
 
 ## Requirements
+
+For the independent manual notebook, see the [from-scratch guide](local-lab/docs/manual-walkthrough.md). It needs Python, Java, Spark and the format libraries, but no Docker or S3 service. The requirements below apply to the automated stack and optional Docker runtime.
 
 - Docker Engine or Docker Desktop with Compose v2.
 - Python 3.9+ on the host for the explorer and test suite.
@@ -21,13 +23,13 @@ make -f Makefile.olist build
 make -f Makefile.olist notebook
 ```
 
-Open the token-bearing Jupyter URL printed in the logs at `http://127.0.0.1:8888`. Choose a notebook below, edit its `CONFIG` cell, and run cells in order. The source CSV is mounted read-only; each run uses separate table prefixes.
+Open the token-bearing Jupyter URL printed in the logs at `http://127.0.0.1:8888`. Choose a notebook below, edit its configuration cell, and run cells in order. The source CSV is mounted read-only; each run uses separate table locations.
 
 ## Choose a notebook
 
 | Notebook | What to explore | Default row counts |
 | --- | --- | --- |
-| [Manual walkthrough](local-lab/notebooks/Olist_Table_Formats_Manual.ipynb) | Read the SQL and DataFrame writes directly in cells, then inspect metadata after create, insert, update and delete. | 3 → 5 → 5 → 4 |
+| [Manual walkthrough](local-lab/notebooks/Olist_Table_Formats_Manual.ipynb) | Start one Spark session and run visible SQL/DataFrame operations on local disk, with no project helpers or explorer dependency. | 3 → 5 → 5 → 4 |
 | [Automated walkthrough](local-lab/notebooks/Olist_Table_Formats.ipynb) | Run create, insert and delete through the shared runner, with saved snapshots for the explorer. | 3 → 5 → 4 |
 
 Both preserve Olist's eight native fields and nullable lifecycle timestamps. Sampling counts and seed are configurable. The manual update adds one day to an estimated delivery date as a controlled example.

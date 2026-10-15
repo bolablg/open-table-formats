@@ -1,50 +1,78 @@
-# Manual and automated Olist notebooks
+# A manual notebook, from scratch
 
-Both notebooks use the downloaded source CSV read-only and the pinned local Docker stack. They answer different teaching needs.
+The [manual notebook](../notebooks/Olist_Table_Formats_Manual.ipynb) contains the complete exercise. It imports standard Python modules and PySpark, starts one Spark session, and runs each table operation directly in visible cells. There are no project imports, helper-function definitions, script calls, adapter classes or explorer snapshots.
 
-| Path | Operations | Default rows | Implementation |
-| --- | --- | --- | --- |
-| [Automated notebook](../notebooks/Olist_Table_Formats.ipynb) | Create, insert, delete | 3 → 5 → 4 | Shared runner/adapters and explorer snapshots |
-| [Manual notebook](../notebooks/Olist_Table_Formats_Manual.ipynb) | Create, insert, update, delete | 3 → 5 → 5 → 4 | Self-contained visible SQL/DataFrame writes and metadata queries |
+## What you will do
 
-## Open the manual notebook
+1. Choose a CSV path and a local output directory.
+2. Start Spark with the pinned format libraries.
+3. Select real source orders and state the expected results.
+4. Work through Iceberg: create, insert, update, delete, then open metadata.
+5. Repeat the same sequence for Delta and Hudi.
+6. Compare all business values and confirm the source CSV is unchanged.
 
-From the repository's `local-lab/` directory:
+Defaults are **3 → 5 → 5 → 4** for each format. The one-day estimated-delivery update and deletion are controlled teaching examples. The notebook validates the selected sample, not the entire source dataset. UTC is a parsing convention, not verified source time-zone provenance.
+
+## Run without this repository's infrastructure
+
+You can copy just the notebook to your own folder. You need:
+
+- Python 3.10 or 3.11 and Java 17.
+- PySpark 3.5.7 and Jupyter, for example `pip install pyspark==3.5.7 jupyterlab` in an environment you choose.
+- The separately downloaded `olist_orders_dataset.csv`. See [data acquisition and license](../../DATA_LICENSE.md).
+- Internet access for the first Maven dependency download, unless the matching JARs are already installed.
+
+Open Jupyter, create a fresh Python kernel and edit `CSV_PATH` in the first code cell. The remaining cells run in order. `INITIAL_ROWS`, `INSERT_ROWS`, `DELETE_ROWS` and `SAMPLE_SEED` are also visible there.
+
+The setup cell shows all Spark configuration. It uses Spark 3.5 / Scala 2.12 artifacts for Iceberg 1.11.0, Delta Lake 3.3.2 and Hudi 1.2.0. It detects the existing lab image's bundled JARs; otherwise Spark resolves the listed Maven coordinates. The standalone Maven-download path is documented separately from the bundled runtime used for local verification.
+
+This is an **open-source Spark** recipe, not a Databricks Runtime installation recipe. No Databricks account, cloud catalog, LocalStack, S3 bucket, explorer server or project Python module is required.
+
+## Optional: use the existing Docker runtime
+
+From `local-lab/`, set `OLIST_SOURCE_CSV` to the downloaded orders CSV. Build the runtime images first if needed:
 
 ```sh
-export OLIST_SOURCE_CSV='/absolute/path/to/olist_orders_dataset.csv'
-make -f Makefile.olist notebook
+make -f Makefile.olist build
+make -f Makefile.olist manual-notebook
 ```
 
-Authenticate with the token-bearing Jupyter URL in the logs, then open:
-http://127.0.0.1:8888/lab/tree/notebooks/Olist_Table_Formats_Manual.ipynb
+The manual launch skips the LocalStack dependency. Open the token-bearing Jupyter URL printed in the logs, then select `notebooks/Olist_Table_Formats_Manual.ipynb`. The CSV is mounted read-only at `/source/olist_orders_dataset.csv`.
 
-Use a fresh kernel. Edit the four `CONFIG` values, then run cells in order. Do not run another lab writer at the same time. All business writes and metadata reads appear directly in cells. The four small in-notebook utilities show Spark configuration, S3 listing, bounded actual metadata decoding, and independent equality checks. No project runner, adapter, helper import or script invocation is used.
-
-The notebook creates and inspects Iceberg first, then Delta, then Hudi. It subsequently inserts, updates and deletes in each format. The single update shifts the first initial order's estimated delivery date by one day without changing row count. Inserts use distinct reserved real source rows; update/delete behavior is a simulation. Optional timestamp nulls remain null. UTC is an explicit lab parsing convention, not verified source timezone provenance.
-
-## Separate Spark contexts
-
-Iceberg uses a named Hadoop catalog. Delta configures `spark_catalog` as `DeltaCatalog`; Hudi configures it as `HoodieCatalog` and uses its own SQL extension/Kryo registrator. The manual notebook stops each Spark context before opening the next rather than claiming both catalog values coexist. It records the actual extension/catalog settings for all twelve format/stage sessions. The automated notebook uses its own DataSource and SQL configuration.
-
-## Evidence and safeguards
-
-Every run has a new `s3a://lakehouse-lab/olist/manual/<run_id>/` prefix and local `evidence/olist/manual/<run_id>/` directory. Creates refuse existing table paths, stage guards reject replay within the kernel, and source checksums are checked before and after writes. No global reset, source write, automated current-selector update or cloud endpoint is used.
-
-Actual Iceberg metadata JSON and decoded manifest-list Avro, raw Delta commit JSON, and Hudi properties/completed-commit metadata appear after each operation. Hudi's business timeline and auxiliary metadata-table log files are counted separately. Metadata previews are bounded at 1 MB and 20 Avro records and report truncation. These outputs contain source-derived data and remain local.
-
-Headless execution uses the same cells:
+For notebook execution without the Jupyter UI:
 
 ```sh
 make -f Makefile.olist manual-execute
 ```
 
-The executed notebook gets a unique filename under ignored `evidence/olist/manual/executions/`. Its final output gives the manual run ID and verification path. The source notebook is output-free. The explorer at http://127.0.0.1:8765 continues to read saved **automated** snapshots, not live tables or the manual artifacts.
+This optional wrapper executes the notebook's own cells, not a project runner. It skips LocalStack and mounts a local output folder. Executed notebooks stay under ignored `evidence/olist/manual/executions/`; table files from that wrapper stay under ignored `evidence/olist/manual/local-tables/`.
 
-## Local architecture figure
+## Why one session works here
 
-![Local table formats architecture](assets/local-architecture.png)
+Iceberg has a named Hadoop catalog. Delta owns the Spark session catalog. Hudi uses its DataFrame writer/reader, not Hudi SQL, so it does not need to replace Delta's session catalog. Hudi's Kryo serializer/registrator and Iceberg/Delta extensions are explicit startup settings.
 
-[Editable SVG](assets/local-architecture.svg) · [4320 × 2400 PNG](assets/local-architecture.png) · [Alt text](assets/local-architecture.alt.txt)
+This combination is verified on the bundled local stack. Other Spark, Scala or format versions require compatibility checks. A fresh kernel matters because startup extensions and serializer settings cannot be reliably replaced after a Spark context exists.
 
-The figure is grounded in the actual Compose services: Jupyter/Spark and temporary `olist` jobs, LocalStack's S3 API (`s3`), and its persistent `s3-data` volume. Each format owns separate table data and metadata. Dashed arrows show saved automated evidence flowing to the host Python explorer. It depicts no AWS cloud infrastructure or Glue catalog.
+## Inspect the metadata, without a decoder script
+
+- Iceberg: SQL metadata views, the actual versioned JSON and the current snapshot's decoded Avro manifest list.
+- Delta: SQL history and the actual latest JSON Lines commit.
+- Hudi: the actual table properties, timeline filenames and decoded Avro completed commit.
+
+The Avro cells use the Java Avro library already available to Spark. They are written directly in the notebook. The small exercise prints complete records; it is not a bounded metadata browser for production-sized tables.
+
+Each operation compares every native business value with expectations derived before any table write. Hudi metadata columns are excluded from those business comparisons.
+
+## Outputs and safeguards
+
+`RUN_DIR` is a new UUID directory under the configurable local `OUTPUT_BASE`. Creates refuse existing table paths. The notebook never resets earlier runs or modifies the automated current-run pointer. It includes no cleanup command.
+
+The default `manual-output/` is relative to the notebook process's working directory, not necessarily the notebook file. On your own computer it is ordinary local disk. In the optional interactive Docker runtime it is container-local unless you choose a mounted path, such as `/workspace/evidence/olist/manual/tables`. The headless Makefile wrapper mounts its output directory automatically.
+
+Restart the kernel and start a fresh run after a failure or before replaying mutations. Run only one memory-intensive lab execution at a time. Keep CSV files, generated tables and executed notebook outputs local; public source notebooks must have cleared outputs.
+
+## Separate from the automated lab
+
+The [automated notebook](../notebooks/Olist_Table_Formats.ipynb) still uses shared scripts, LocalStack and saved explorer snapshots: **3 → 5 → 4**. Those files are unchanged by the manual rewrite. The explorer reads automated evidence, not this manual notebook's local tables.
+
+The manual exercise tests sequential business-value correctness and demonstrates metadata. It is not a benchmark, concurrency test, crash-recovery test or cross-engine interoperability test.
